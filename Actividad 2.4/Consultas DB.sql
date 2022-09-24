@@ -45,7 +45,7 @@ SELECT Apellidos, Nombres FROM (
     ) AS CantPedidosEnviados
     FROM Clientes C
 ) AS EnviosClientes
-WHERE CantPedidosEnviados > CantPedidos / 3.0
+WHERE CantPedidosEnviados >= CantPedidos / 3.0
 
 
 -- 6 Los colaboradores que hayan realizado todas las tareas (no necesariamente en un mismo pedido).
