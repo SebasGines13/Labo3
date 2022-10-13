@@ -32,7 +32,6 @@ BEGIN
     END CATCH
 END
 GO
--- EXEC sp_Agregar_Usuario '16529161', 'Albornoz', 'Liliana','24/09/1963', 1, 'Avenidad Triunvirato 3869', '1524010405'
 
 
 -- B) Realizar un procedimiento almacenado llamado sp_Agregar_Tarjeta que dé de alta una tarjeta. El procedimiento solo debe recibir el DNI del usuario.
@@ -90,7 +89,7 @@ BEGIN
 END
 
 
--- Realizar un procedimiento almacenado llamado sp_Agregar_Viaje que registre un viaje a una tarjeta en particular. El procedimiento debe recibir: Número de tarjeta, importe del viaje, nro de interno y nro de línea.
+-- C) Realizar un procedimiento almacenado llamado sp_Agregar_Viaje que registre un viaje a una tarjeta en particular. El procedimiento debe recibir: Número de tarjeta, importe del viaje, nro de interno y nro de línea.
 -- El procedimiento deberá:
 -- Descontar el saldo
 -- Registrar el viaje
