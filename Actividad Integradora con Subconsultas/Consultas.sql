@@ -1,7 +1,14 @@
 
 -- 1) ¿Cuál es la cantidad de pacientes que no se atendieron en el año 2015?
-SELECT COUNT( DISTINCT TUR.IDPACIENTE) FROM TURNOS TUR
-WHERE YEAR(TUR.FECHAHORA) <> 2015
+SELECT
+count (DISTINCT p.IDPACIENTE) as 'Cantidad no se atendieron en 2015'
+from pacientes p
+WHERE P.IDPACIENTE not IN
+(select
+P.IDPACIENTE
+FROM PACIENTES P
+INNER JOIN TURNOS T ON T.IDPACIENTE=p.IDPACIENTE
+where (year(t.FECHAHORA)=2015))
 
 -- 2) ¿Cuál es el costo de la consulta promedio de cualquier especialista en "Oftalmología"?
 SELECT AVG(COSTO_CONSULTA) FROM MEDICOS MED
