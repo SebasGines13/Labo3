@@ -55,12 +55,8 @@ BEGIN
                 DECLARE @Saldo int             
                 DECLARE @LastIdentity int
 
-                SELECT @IdTarjeta = ID, @Saldo = SALDO FROM (
-                    SELECT T.ID, SUM( CASE  MOV.TIPOMOVIMIENTO WHEN 'C' THEN isnull(MOV.IMPORTE,0) ELSE (isnull(MOV.IMPORTE,0)*-1) END )SALDO 
-                    FROM TARJETAS T
-                    LEFT JOIN MOVIMIENTOS_TARJETAS MOV ON MOV.IDTARJETA = T.ID
-                    WHERE T.IDUSUARIO = @IdUsuario AND T.ESTADO = 1
-                    GROUP BY T.ID) AS T
+                SELECT @IdTarjeta = ID, @Saldo = SALDO FROM TARJETAS
+                    WHERE IDUSUARIO = @IdUsuario AND ESTADO = 1
 
                 IF @IdTarjeta > 0 BEGIN
                     UPDATE TARJETAS
@@ -68,8 +64,8 @@ BEGIN
                     WHERE ID = @IdTarjeta
                 END                       
 
-                INSERT INTO TARJETAS(FECHAALTA, IDUSUARIO)
-                VALUES(GETDATE(),@IdUsuario)
+                INSERT INTO TARJETAS(FECHAALTA, IDUSUARIO, SALDO)
+                VALUES(GETDATE(),@IdUsuario, @Saldo)
 
                 IF @Saldo > 0 BEGIN   
                     SET @LastIdentity = scope_identity()                                  
@@ -108,20 +104,14 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION
             DECLARE @MSJERROR VARCHAR(255) = 'NO SE PUDO DAR DE ALTA EL VIAJE'
-            DECLARE @ExisteTarjeta bit 
+            DECLARE @ExisteTarjeta bit
+            DECLARE @Saldo money
 
-            SELECT @ExisteTarjeta = COUNT(*) FROM TARJETAS WHERE ID = @IdTarjeta AND ESTADO = 1
+            SELECT @ExisteTarjeta = COUNT(*), @Saldo = (SALDO - @Importe) FROM TARJETAS WHERE ID = @IdTarjeta AND ESTADO = 1 GROUP BY ID, SALDO
 
             IF @ExisteTarjeta = 1 BEGIN
-                DECLARE @Saldo money
-                SELECT @Saldo = SALDO FROM (
-                    SELECT SUM( CASE  MOV.TIPOMOVIMIENTO WHEN 'C' THEN isnull(MOV.IMPORTE,0) ELSE (isnull(MOV.IMPORTE,0)*-1) END )SALDO 
-                    FROM TARJETAS T
-                    LEFT JOIN MOVIMIENTOS_TARJETAS MOV ON MOV.IDTARJETA = T.ID
-                    WHERE T.ID = @IdTarjeta
-                    GROUP BY T.ID) AS T
                 
-                IF ( @saldo - @Importe ) >= -10 BEGIN
+                IF ( @saldo ) >= -10 BEGIN
                     DECLARE @ExisteLinea bit 
                     SELECT @ExisteLinea = COUNT(*) FROM LINEAS_COLECTIVO WHERE COD = @Linea
 
@@ -134,6 +124,8 @@ BEGIN
                             SET @LastIdentity = scope_identity()
                             INSERT INTO VIAJES (INTERNO, IDMOVIMIENTOTARJETA, CODLINEACOLECTIVO)
                                 VALUES ( @Interno, @LastIdentity, @Linea)
+
+                            UPDATE TARJETAS SET SALDO = @Saldo WHERE ID = @IdTarjeta
                         END
                         ELSE BEGIN
                             SET @MSJERROR = @MSJERROR + ' - INTERNO INCORRECTO'
@@ -183,6 +175,8 @@ BEGIN
                 IF @Importe > 0 BEGIN
                     INSERT INTO MOVIMIENTOS_TARJETAS (FECHA, IDTARJETA, IMPORTE, TIPOMOVIMIENTO)
                             VALUES (GETDATE(), @IdTarjeta, @Importe, 'C')
+
+                    UPDATE TARJETAS SET SALDO = SALDO + @Importe WHERE ID = @IdTarjeta
                 END
                 ELSE BEGIN
                     SET @MSJERROR = @MSJERROR + ' - EL IMPORTE DE RECARGA DEBE SER MAYOR A CERO'
@@ -200,7 +194,6 @@ BEGIN
         RAISERROR(@MSJERROR, 16, 1)
     END CATCH
 END
-
 
 -- E) Realizar un procedimiento almacenado llamado sp_Baja_Fisica_Usuario que elimine un usuario del sistema. La eliminación deberá ser 'en cascada'. Esto quiere decir que para cada usuario primero deberán eliminarse todos los viajes y recargas de sus respectivas tarjetas. Luego, todas sus tarjetas y por último su registro de usuario.
 
@@ -246,4 +239,3 @@ BEGIN
         RAISERROR(@MSJERROR, 16, 1)
     END CATCH
 END
-
